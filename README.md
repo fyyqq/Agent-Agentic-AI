@@ -35,7 +35,7 @@ This project is a hands-on exploration of building AI agents and agentic AI syst
 
 Run the main script:
 ```
-python main.py
+python normal_llm_response.py
 ```
 
 ## Notes
