@@ -1,3 +1,6 @@
+# give me a function for countdown from today to the day after a year in range 365 days, countdown required day, hour, minute, second
+
+
 import os
 import json
 import dotenv as env
@@ -16,19 +19,17 @@ client = OpenAI(
 )
 
 def generate_response(messages: List[Dict]) -> str:
-    print("\nCall LLM to get response...\n")
-    try:
-        response = client.chat.completions.create(
-            messages=messages,
-            max_tokens=1024,
-            temperature=1,
-            top_p=1,
-            model=model
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print("Error:", e)
-        sys.exit(1)
+    print("\nCall LLM to get response...\n\n")
+
+    response = client.chat.completions.create(
+        messages=messages,
+        max_tokens=1024,
+        temperature=1,
+        top_p=1,
+        model=model
+    )
+
+    return response.choices[0].message.content
 
 
 def extract_code_block(response: str) -> str:
@@ -52,6 +53,7 @@ def develop_custom_function():
    print("Example: 'A function that calculates the factorial of a number'")
    print("Your description: ", end='')
    function_description = input().strip()
+   print(f"function description: {function_description}")
 
    # Initialize conversation with system prompt
    messages = [
@@ -69,12 +71,10 @@ def develop_custom_function():
    initial_function = extract_code_block(initial_function)
 
    print("\n=== Initial Function ===")
-   print(initial_function)
+   # print(f"{initial_function}\n")
 
-   # Add assistant's response to conversation
-   # Notice that I am purposely causing it to forget its commentary and just see the code so that
-   # it appears that is always outputting just code.
-#    messages.append({"role": "assistant", "content": "\`\`\`python\n\n"+initial_function+"\n\n\`\`\`"})
+   # Add initial function response to conversation)
+
    messages.append({"role": "assistant", "content": "```python\n\n"+initial_function+"\n\n```"})
 
    # Second prompt - Add documentation
@@ -86,32 +86,31 @@ def develop_custom_function():
    documented_function = generate_response(messages)
    documented_function = extract_code_block(documented_function)
    print("\n=== Documented Function ===")
-   print(documented_function)
+   # print(documented_function)
 
    # Add documentation response to conversation
-   # messages.append({"role": "assistant", "content": "\`\`\`python\n\n"+documented_function+"\n\n\`\`\`"})
-   messages.append({"role": "assistant", "content": "```python\n\n"+documented_function+"\n\n```"})
+   messages.append({"role": "assistant", "content": "\`\`\`python\n\n"+documented_function+"\n\n\`\`\`"})
 
    # Third prompt - Add test cases
    messages.append({
       "role": "user",
-   # "content": "Add unittest test cases for this function, including tests for basic functionality, "
-   #            "edge cases, error cases, and various input scenarios. Output the code in a \`\`\`python code block\`\`\`."
-   "content": "Add unittest test cases for this function, including tests for basic functionality, edge cases, error cases, and various input scenarios. Output the code in a ```python code block```."
+      "content": "Add unittest test cases for this function, including tests for basic functionality, "
+                 "edge cases, error cases, and various input scenarios. Output the code in a \`\`\`python code block\`\`\`."
    })
    test_cases = generate_response(messages)
-   # We will likely run into random problems here depending on if it outputs JUST the test cases or the
-   # test cases AND the code. This is the type of issue we will learn to work through with agents in the course.
    test_cases = extract_code_block(test_cases)
    print("\n=== Test Cases ===")
-   print(test_cases)
+   # print(test_cases)
 
-   # Generate filename from function description
-   filename = function_description.lower()
-   filename = ''.join(c for c in filename if c.isalnum() or c.isspace())
-   filename = filename.replace(' ', '_')[:30] + '.py'
+   messages = [
+      {"role": "system", "content": "You are an expert software engineer that clever and creative in renaming file based on the usecase of file."},
+      {"role": "user", "content": f"Write me a name file based on what input i gave here {function_description}, no recommandation, only one answer"}
+   ]
 
-   # Save final version
+   filename = generate_response(messages)
+   filename = extract_code_block(filename)
+
+   # # Save final version
    with open(filename, 'w') as f:
       f.write(documented_function + '\n\n' + test_cases)
 
